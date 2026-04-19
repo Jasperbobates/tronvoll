@@ -71,6 +71,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
   const mapRef = useRef<Map | null>(null);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [isAtDefaultZoom, setIsAtDefaultZoom] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {
@@ -87,10 +88,12 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
       pitch: DEFAULT_PITCH,
       bearing: DEFAULT_BEARING,
       attributionControl: false,
+      dragPan: true,
       dragRotate: false,
+      touchZoomRotate: true,
       touchPitch: false,
-      scrollZoom: false,
-      doubleClickZoom: false,
+      scrollZoom: true,
+      doubleClickZoom: true,
       renderWorldCopies: true,
     });
 
@@ -347,6 +350,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
 
   const handleResetView = () => {
     setActiveProject(null);
+    setIsMobileMenuOpen(false);
     resetMapView();
   };
 
@@ -360,6 +364,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
       behavior: "smooth",
       block: "start",
     });
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -372,48 +377,103 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
       <button
         type="button"
         onClick={handleResetView}
-        className="absolute right-6 top-6 z-10 border border-black/15 bg-white/90 px-4 py-2 text-xs uppercase tracking-[0.12em] text-black transition hover:bg-white"
+        className="absolute right-3 top-3 z-10 border border-black/15 bg-white/90 px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white md:right-6 md:top-6 md:px-4 md:text-xs"
       >
         Reset View
       </button>
       {activeProject && <ProjectPanel project={activeProject} />}
       {!activeProject && isAtDefaultZoom && (
         <>
-          <div className="absolute left-8 top-8 max-w-sm text-black">
-            <h1 className="font-serif text-5xl tracking-tight">Mette Tronvoll</h1>
-            <p className="mt-3 text-sm uppercase tracking-[0.14em] text-black/70">Photographic Projects by Place</p>
+          <div className="absolute left-3 top-3 max-w-[60vw] text-black md:left-8 md:top-8 md:max-w-sm">
+            <h1 className="font-serif text-3xl tracking-tight md:text-5xl">Mette Tronvoll</h1>
+            <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-black/70 md:mt-3 md:text-sm">
+              Photographic Projects by Place
+            </p>
           </div>
         </>
       )}
-      <nav className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 bg-white/88 p-1.5 shadow-sm backdrop-blur-sm">
+      <nav className="absolute bottom-8 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-2 bg-white/88 p-1.5 shadow-sm backdrop-blur-sm md:flex">
         <Link
           href="/biography"
-          className="border border-black/15 px-3 py-2 text-xs uppercase tracking-[0.12em] text-black transition hover:bg-white"
+          className="border border-black/15 px-3 py-2 text-center text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white md:text-xs"
         >
           CV
         </Link>
         <button
           type="button"
           onClick={() => handleScrollToSection("about")}
-          className="border border-black/15 px-3 py-2 text-xs uppercase tracking-[0.12em] text-black transition hover:bg-white"
+          className="border border-black/15 px-3 py-2 text-center text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white md:text-xs"
         >
           About
         </button>
         <button
           type="button"
           onClick={() => handleScrollToSection("projects")}
-          className="border border-black/15 px-3 py-2 text-xs uppercase tracking-[0.12em] text-black transition hover:bg-white"
+          className="border border-black/15 px-3 py-2 text-center text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white md:text-xs"
         >
           Projects
         </button>
         <button
           type="button"
           onClick={() => handleScrollToSection("contact")}
-          className="border border-black/15 px-3 py-2 text-xs uppercase tracking-[0.12em] text-black transition hover:bg-white"
+          className="border border-black/15 px-3 py-2 text-center text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white md:text-xs"
         >
           Contact
         </button>
       </nav>
+
+      {isMobileMenuOpen && (
+        <button
+          type="button"
+          aria-label="Close navigation menu"
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="fixed inset-0 z-10 md:hidden"
+        />
+      )}
+
+      <div className="absolute bottom-3 right-3 z-20 md:hidden">
+        {isMobileMenuOpen && (
+          <div className="mb-2 w-44 bg-white/95 p-2 shadow-sm backdrop-blur-sm">
+            <Link
+              href="/biography"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block border border-black/15 px-3 py-2 text-center text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white"
+            >
+              CV
+            </Link>
+            <button
+              type="button"
+              onClick={() => handleScrollToSection("about")}
+              className="mt-2 block w-full border border-black/15 px-3 py-2 text-center text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white"
+            >
+              About
+            </button>
+            <button
+              type="button"
+              onClick={() => handleScrollToSection("projects")}
+              className="mt-2 block w-full border border-black/15 px-3 py-2 text-center text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white"
+            >
+              Projects
+            </button>
+            <button
+              type="button"
+              onClick={() => handleScrollToSection("contact")}
+              className="mt-2 block w-full border border-black/15 px-3 py-2 text-center text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white"
+            >
+              Contact
+            </button>
+          </div>
+        )}
+        <button
+          type="button"
+          aria-label="Toggle navigation menu"
+          aria-expanded={isMobileMenuOpen}
+          onClick={() => setIsMobileMenuOpen((current) => !current)}
+          className="border border-black/15 bg-white/95 px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-black shadow-sm transition hover:bg-white"
+        >
+          Menu
+        </button>
+      </div>
     </section>
   );
 }

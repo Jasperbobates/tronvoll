@@ -44,12 +44,24 @@ export default function ProjectPanel({ project }: ProjectPanelProps) {
         )}
       </aside>
 
-      <aside className="absolute bottom-6 right-6 z-10 w-[min(24rem,calc(100vw-3rem))] bg-white/92 p-6 shadow-sm backdrop-blur-sm">
+      <aside className="absolute bottom-3 right-3 z-10 w-[calc(100vw-1.5rem)] max-w-sm bg-white/92 p-4 shadow-sm backdrop-blur-sm md:bottom-6 md:right-6 md:w-[min(24rem,calc(100vw-3rem))] md:p-6">
+        {mainImage && (
+          <figure className="relative mb-4 aspect-[4/3] w-full overflow-hidden bg-neutral-100 md:hidden">
+            <Image
+              src={mainImage}
+              alt={`${project.title} main image`}
+              fill
+              sizes="100vw"
+              className="object-cover"
+              priority
+            />
+          </figure>
+        )}
         <p className="text-xs uppercase tracking-[0.14em] text-black/50">
           {project.city ? `${project.city}, ` : ""}
           {project.country} · {project.year}
         </p>
-        <h2 className="mt-3 font-serif text-3xl leading-tight tracking-tight">{project.title}</h2>
+        <h2 className="mt-3 font-serif text-2xl leading-tight tracking-tight md:text-3xl">{project.title}</h2>
         <p className="mt-3 text-sm leading-relaxed text-black/70">{project.description}</p>
         <Link href={`/projects/${project.slug}`} className="mt-6 inline-block text-sm underline underline-offset-4">
           View project
