@@ -18,10 +18,7 @@ const DEFAULT_PITCH = 16;
 const DEFAULT_BEARING = 0;
 const MOBILE_MIN_ZOOM = 0;
 const MOBILE_DEFAULT_CENTER: [number, number] = [10, 6];
-const MOBILE_MAX_BOUNDS: [[number, number], [number, number]] = [
-  [-180, -82],
-  [180, 82],
-];
+const MOBILE_PITCH = 0;
 
 const createCircularMarkerImage = (imageUrl: string) =>
   new Promise<ImageData>((resolve, reject) => {
@@ -82,7 +79,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
     map.easeTo({
       center: MOBILE_DEFAULT_CENTER,
       zoom: MOBILE_MIN_ZOOM,
-      pitch: DEFAULT_PITCH,
+      pitch: MOBILE_PITCH,
       bearing: DEFAULT_BEARING,
       duration: 700,
       essential: true,
@@ -103,8 +100,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
       zoom: isMobileViewport ? MOBILE_MIN_ZOOM : DEFAULT_ZOOM,
       minZoom: isMobileViewport ? MOBILE_MIN_ZOOM : 1.2,
       maxZoom: 10,
-      maxBounds: isMobileViewport ? MOBILE_MAX_BOUNDS : undefined,
-      pitch: DEFAULT_PITCH,
+      pitch: isMobileViewport ? MOBILE_PITCH : DEFAULT_PITCH,
       bearing: DEFAULT_BEARING,
       attributionControl: false,
       dragPan: true,
@@ -113,7 +109,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
       touchPitch: false,
       scrollZoom: false,
       doubleClickZoom: true,
-      renderWorldCopies: true,
+      renderWorldCopies: !isMobileViewport,
     });
 
     map.on("load", async () => {
