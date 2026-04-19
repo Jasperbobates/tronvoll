@@ -16,6 +16,7 @@ const DEFAULT_CENTER: [number, number] = [10, 20];
 const DEFAULT_ZOOM = 1.5;
 const DEFAULT_PITCH = 16;
 const DEFAULT_BEARING = 0;
+const MOBILE_MIN_ZOOM = 0;
 
 const createCircularMarkerImage = (imageUrl: string) =>
   new Promise<ImageData>((resolve, reject) => {
@@ -70,20 +71,32 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
-  const [isAtDefaultZoom, setIsAtDefaultZoom] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const fitAllProjectsInView = (map: Map) => {
+    map.easeTo({
+      center: DEFAULT_CENTER,
+      zoom: MOBILE_MIN_ZOOM,
+      pitch: DEFAULT_PITCH,
+      bearing: DEFAULT_BEARING,
+      duration: 700,
+      essential: true,
+    });
+  };
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {
       return;
     }
 
+    const isMobileViewport = window.innerWidth < 768;
+
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
       center: DEFAULT_CENTER,
       zoom: DEFAULT_ZOOM,
-      minZoom: 1.2,
+      minZoom: isMobileViewport ? MOBILE_MIN_ZOOM : 1.2,
       maxZoom: 10,
       pitch: DEFAULT_PITCH,
       bearing: DEFAULT_BEARING,
@@ -92,7 +105,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
       dragRotate: false,
       touchZoomRotate: true,
       touchPitch: false,
-      scrollZoom: true,
+      scrollZoom: false,
       doubleClickZoom: true,
       renderWorldCopies: true,
     });
@@ -319,9 +332,10 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
         map.getCanvas().style.cursor = "";
       });
 
-      map.on("zoom", () => {
-        setIsAtDefaultZoom(Math.abs(map.getZoom() - DEFAULT_ZOOM) < 0.02);
-      });
+      if (window.innerWidth < 768) {
+        fitAllProjectsInView(map);
+      }
+
     });
 
     mapRef.current = map;
@@ -335,6 +349,11 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
   const resetMapView = () => {
     const map = mapRef.current;
     if (!map) {
+      return;
+    }
+
+    if (window.innerWidth < 768) {
+      fitAllProjectsInView(map);
       return;
     }
 
@@ -382,7 +401,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
         Reset View
       </button>
       {activeProject && <ProjectPanel project={activeProject} />}
-      {!activeProject && isAtDefaultZoom && (
+      {!activeProject && (
         <>
           <div className="absolute left-3 top-3 max-w-[60vw] text-black md:left-8 md:top-8 md:max-w-sm">
             <h1 className="font-serif text-3xl tracking-tight md:text-5xl">Mette Tronvoll</h1>
@@ -431,9 +450,9 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
         />
       )}
 
-      <div className="absolute bottom-3 right-3 z-20 md:hidden">
+      <div className="fixed bottom-3 right-3 z-20 md:hidden">
         {isMobileMenuOpen && (
-          <div className="mb-2 w-44 bg-white/95 p-2 shadow-sm backdrop-blur-sm">
+          <div className="absolute bottom-full right-0 mb-2 w-44 bg-white/95 p-2 shadow-sm backdrop-blur-sm">
             <Link
               href="/biography"
               onClick={() => setIsMobileMenuOpen(false)}
