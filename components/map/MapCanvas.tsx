@@ -17,6 +17,11 @@ const DEFAULT_ZOOM = 1.5;
 const DEFAULT_PITCH = 16;
 const DEFAULT_BEARING = 0;
 const MOBILE_MIN_ZOOM = 0;
+const MOBILE_DEFAULT_CENTER: [number, number] = [10, 6];
+const MOBILE_MAX_BOUNDS: [[number, number], [number, number]] = [
+  [-180, -82],
+  [180, 82],
+];
 
 const createCircularMarkerImage = (imageUrl: string) =>
   new Promise<ImageData>((resolve, reject) => {
@@ -75,7 +80,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
 
   const fitAllProjectsInView = (map: Map) => {
     map.easeTo({
-      center: DEFAULT_CENTER,
+      center: MOBILE_DEFAULT_CENTER,
       zoom: MOBILE_MIN_ZOOM,
       pitch: DEFAULT_PITCH,
       bearing: DEFAULT_BEARING,
@@ -94,10 +99,11 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
-      center: DEFAULT_CENTER,
-      zoom: DEFAULT_ZOOM,
+      center: isMobileViewport ? MOBILE_DEFAULT_CENTER : DEFAULT_CENTER,
+      zoom: isMobileViewport ? MOBILE_MIN_ZOOM : DEFAULT_ZOOM,
       minZoom: isMobileViewport ? MOBILE_MIN_ZOOM : 1.2,
       maxZoom: 10,
+      maxBounds: isMobileViewport ? MOBILE_MAX_BOUNDS : undefined,
       pitch: DEFAULT_PITCH,
       bearing: DEFAULT_BEARING,
       attributionControl: false,
@@ -287,11 +293,15 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
         }
 
         setActiveProject(project);
-        const horizontalOffset = window.innerWidth >= 768 ? Math.round(window.innerWidth * 0.16) : 0;
+        const isMobileViewport = window.innerWidth < 768;
+        const horizontalOffset = isMobileViewport ? 0 : Math.round(window.innerWidth * 0.16);
+        const verticalOffset = isMobileViewport
+          ? -Math.round(window.innerHeight * 0.30)
+          : Math.round(window.innerHeight * 0.08);
         map.easeTo({
           center: [project.longitude, project.latitude],
           zoom: 5,
-          offset: [horizontalOffset, 0],
+          offset: [horizontalOffset, verticalOffset],
           duration: 700,
           essential: true,
         });
@@ -299,6 +309,26 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
 
       map.on("click", "unclustered-point", handleProjectPointClick);
       map.on("click", "unclustered-photo", handleProjectPointClick);
+
+      const handleMapDragStart = () => {
+        setActiveProject(null);
+      };
+
+      map.on("dragstart", handleMapDragStart);
+
+      const handleMapBackgroundClick = (event: maplibregl.MapMouseEvent) => {
+        const projectFeatures = map.queryRenderedFeatures(event.point, {
+          layers: ["unclustered-point", "unclustered-photo"],
+        });
+
+        if (projectFeatures.length > 0) {
+          return;
+        }
+
+        setActiveProject(null);
+      };
+
+      map.on("click", handleMapBackgroundClick);
 
       map.on("mouseenter", "clusters", () => {
         map.getCanvas().style.cursor = "pointer";
@@ -396,7 +426,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
       <button
         type="button"
         onClick={handleResetView}
-        className="absolute right-3 top-3 z-10 border border-black/15 bg-white/90 px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white md:right-6 md:top-6 md:px-4 md:text-xs"
+        className="absolute bottom-3 right-3 z-30 border border-black/15 bg-white/90 px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white md:bottom-6 md:right-6 md:px-4 md:text-xs"
       >
         Reset View
       </button>
@@ -411,7 +441,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
           </div>
         </>
       )}
-      <nav className="absolute bottom-8 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-2 bg-white/88 p-1.5 shadow-sm backdrop-blur-sm md:flex">
+      <nav className="absolute bottom-8 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-2 bg-white/88 p-1.5 shadow-sm backdrop-blur-sm md:left-[65%] md:flex">
         <Link
           href="/biography"
           className="border border-black/15 px-3 py-2 text-center text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white md:text-xs"
@@ -450,9 +480,9 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
         />
       )}
 
-      <div className="fixed bottom-3 right-3 z-20 md:hidden">
+      <div className="fixed right-3 top-3 z-20 md:hidden">
         {isMobileMenuOpen && (
-          <div className="absolute bottom-full right-0 mb-2 w-44 bg-white/95 p-2 shadow-sm backdrop-blur-sm">
+          <div className="absolute right-0 top-full mt-2 w-44 bg-white/95 p-2 shadow-sm backdrop-blur-sm">
             <Link
               href="/biography"
               onClick={() => setIsMobileMenuOpen(false)}
