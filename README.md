@@ -1,88 +1,117 @@
-# Minimalist Photography Portfolio (Map-Based)
+# Mette Tronvoll Portfolio
 
-A Next.js + TypeScript + Tailwind starter for a fine-art/editorial photographer portfolio with a fullscreen 2D world map as primary navigation.
+Map-led photography portfolio built with Next.js App Router, TypeScript, Tailwind CSS, and MapLibre.
 
-## Final Stack
+The homepage centers on an interactive world map where each project is geolocated and linked to a dedicated gallery page.
 
-- **Next.js (App Router) + TypeScript**: SEO-ready metadata, static routes, fast server/client split.
-- **Tailwind CSS**: clean control of typography, whitespace, and minimalist layout.
-- **MapLibre GL JS**: best fit for a **2D map with subtle depth** (light pitch + camera easing) without a 3D globe.
-- **next/image**: automatic optimization, responsive image delivery, AVIF/WebP support.
-- **Vercel**: straightforward deployment for Next.js, caching, and image optimization.
+## Features
 
-## Why MapLibre GL JS
+- Fullscreen MapLibre map with clustered project markers
+- Circular image markers generated from each project's cover image
+- Project detail panel and camera easing on map marker click
+- Responsive navigation and map controls for desktop/mobile
+- Dedicated project pages generated from typed data
+- Biography/CV page with expandable chronology sections
+- SEO metadata, robots, and sitemap support
 
-MapLibre provides modern vector-map rendering with soft depth cues while staying flat-map oriented:
+## Tech Stack
 
-- Keep `bearing: 0` and a small `pitch` (`10–20`) for a 2.5D editorial look.
-- Disable rotate interactions to preserve calm UX.
-- Use marker shadows + mild panel blur for layered depth.
-- Add only click-triggered camera easing (no continuous animation).
+- Next.js (App Router)
+- React + TypeScript
+- Tailwind CSS
+- MapLibre GL JS
 
-## Architecture Proposal
+## Requirements
 
-### Page structure
+- Node.js 20+
+- npm
 
-1. **Top / Hero**: fullscreen map (`h-screen`) with project pins.
-2. **Popup panel**: title, short description, link to project page.
-3. **Scroll sections**: About + Contact only.
-4. **Project pages**: static route per project (`/projects/[slug]`) with optimized large images.
-
-### Data model
-
-- Projects are typed and data-driven in `data/projects.ts`.
-- The map and project routes consume the same source of truth.
-- Easy CMS upgrade path later by replacing the data source layer.
-
-### SEO & performance
-
-- Metadata in `app/layout.tsx` and per-project metadata in route pages.
-- `app/sitemap.ts` and `app/robots.ts` included.
-- `next/image` used for project gallery assets.
-
-## Folder structure
-
-```txt
-app/
-  globals.css
-  layout.tsx
-  page.tsx
-  robots.ts
-  sitemap.ts
-  projects/[slug]/page.tsx
-components/
-  map/MapCanvas.tsx
-  map/ProjectPanel.tsx
-  sections/AboutSection.tsx
-  sections/ContactSection.tsx
-data/
-  projects.ts
-lib/
-  seo.ts
-```
-
-## Subtle depth implementation (without globe)
-
-Depth is implemented by combining:
-
-- map camera pitch in `MapCanvas` (`pitch: 16`)
-- soft marker shadow
-- slight container perspective transform
-- restrained gradient overlay
-- no heavy animations
-
-This keeps the map visually dimensional while preserving a minimalist 2D navigation concept.
-
-## Run locally
+## Getting Started
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open `http://localhost:3000`.
+Open http://localhost:3000.
 
-## Notes
+## Scripts
 
-- Replace placeholder image paths under `/public/images/projects/*` with real assets.
-- For best visual quality, export images in multiple sizes and keep originals archived outside `public/`.
+- `npm run dev`: Start development server
+- `npm run build`: Create production build
+- `npm run start`: Start production server
+- `npm run lint`: Run ESLint
+- `npm run typecheck`: Run TypeScript checks
+
+## Content Model
+
+Project content is data-driven. Each project includes:
+
+- `slug`
+- `title`
+- `description`
+- `latitude` / `longitude`
+- `country` and optional `city`
+- `year`
+- `coverImage`
+- `gallery` (array of image paths)
+
+Biography/CV content is also data-driven, with sections for:
+
+- Solo exhibitions
+- Group exhibitions
+- Public collections
+- Optional installation images per entry
+
+## Updating Content
+
+### Add or update a project
+
+1. Add image assets under `public/images/...`.
+2. Add or edit an entry in `data/projects.ts`.
+3. Ensure `coverImage` and all `gallery` paths are valid.
+4. Use a unique `slug` (used for `/projects/[slug]`).
+
+### Update Biography/CV
+
+1. Edit chronology and collection data in `data/biography.ts`.
+2. (Optional) Add installation images and map them to entries.
+
+## Project Structure
+
+```txt
+app/
+  biography/page.tsx
+  projects/[slug]/page.tsx
+  layout.tsx
+  page.tsx
+  robots.ts
+  sitemap.ts
+components/
+  map/
+  sections/
+data/
+  biography.ts
+  projects.ts
+lib/
+  seo.ts
+public/
+  images/
+```
+
+## SEO
+
+- Site-wide metadata is defined centrally and reused across routes.
+- Project pages generate route-level metadata from project data.
+- `robots` and `sitemap` routes are included.
+
+## Deployment
+
+Designed for Vercel deployment.
+
+```bash
+npm run build
+npm run start
+```
+
+For production, confirm the site URL in SEO configuration matches your domain.
