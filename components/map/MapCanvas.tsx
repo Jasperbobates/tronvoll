@@ -22,6 +22,58 @@ const MOBILE_PITCH = 0;
 const MAX_MAP_ZOOM = 14;
 const CLUSTER_MAX_ZOOM = 12;
 const CLUSTER_FIT_MAX_ZOOM = 14;
+const PREVIEW_MARKER_SIZE = 44;
+const PREVIEW_MARKER_INSET = 3;
+const PREVIEW_BATCH_SIZE = 6;
+
+const createCircularMarkerImage = (imageUrl: string) =>
+  new Promise<ImageData>((resolve, reject) => {
+    const image = new window.Image();
+    image.crossOrigin = "anonymous";
+
+    image.onload = () => {
+      const size = PREVIEW_MARKER_SIZE;
+      const inset = PREVIEW_MARKER_INSET;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        reject(new Error("Failed to create marker context"));
+        return;
+      }
+
+      const drawableSize = size - inset * 2;
+      const scale = Math.max(drawableSize / image.width, drawableSize / image.height);
+      const drawWidth = image.width * scale;
+      const drawHeight = image.height * scale;
+      const drawX = (size - drawWidth) / 2;
+      const drawY = (size - drawHeight) / 2;
+
+      context.save();
+      context.beginPath();
+      context.arc(size / 2, size / 2, drawableSize / 2, 0, Math.PI * 2);
+      context.closePath();
+      context.clip();
+      context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+
+      context.restore();
+      context.beginPath();
+      context.arc(size / 2, size / 2, drawableSize / 2, 0, Math.PI * 2);
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = 2;
+      context.stroke();
+
+      resolve(context.getImageData(0, 0, size, size));
+    };
+
+    image.onerror = () => {
+      reject(new Error(`Failed to load marker image: ${imageUrl}`));
+    };
+
+    image.src = imageUrl;
+  });
 
 export default function MapCanvas({ projects }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -155,6 +207,90 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
         },
       });
 
+      map.addLayer({
+        id: "unclustered-photo",
+        type: "symbol",
+        source: "projects",
+        filter: ["!", ["has", "point_count"]],
+        layout: {
+          "icon-image": ["concat", "project-thumb-", ["get", "slug"]],
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 1.5, 1, 5, 1.15, 10, 1.3],
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+        },
+      });
+
+      const loadedPreviewSlugs = new Set<string>();
+      const loadingPreviewSlugs = new Set<string>();
+      let scheduledIdleHandle: number | null = null;
+      let scheduledTimeoutHandle: ReturnType<typeof setTimeout> | null = null;
+
+      const cancelScheduledPreviewLoad = () => {
+        if (scheduledIdleHandle !== null) {
+          window.cancelIdleCallback(scheduledIdleHandle);
+          scheduledIdleHandle = null;
+        }
+
+        if (scheduledTimeoutHandle !== null) {
+          clearTimeout(scheduledTimeoutHandle);
+          scheduledTimeoutHandle = null;
+        }
+      };
+
+      const loadPreviewMarker = async (project: Project) => {
+        const imageId = `project-thumb-${project.slug}`;
+        if (map.hasImage(imageId) || loadedPreviewSlugs.has(project.slug) || loadingPreviewSlugs.has(project.slug)) {
+          return;
+        }
+
+        loadingPreviewSlugs.add(project.slug);
+
+        try {
+          const imageUrl = new URL(project.coverImage, window.location.origin).toString();
+          const markerImage = await createCircularMarkerImage(imageUrl);
+          if (!map.hasImage(imageId)) {
+            map.addImage(imageId, markerImage, { pixelRatio: 2 });
+          }
+          loadedPreviewSlugs.add(project.slug);
+        } catch {
+          // Keep fallback circle marker for this project if preview loading fails.
+        } finally {
+          loadingPreviewSlugs.delete(project.slug);
+        }
+      };
+
+      const getVisibleProjects = () => {
+        const bounds = map.getBounds();
+        return projects.filter((project) => bounds.contains([project.longitude, project.latitude]));
+      };
+
+      const loadVisiblePreviewMarkers = () => {
+        const visibleProjects = getVisibleProjects();
+        const candidates = visibleProjects
+          .filter((project) => !loadedPreviewSlugs.has(project.slug) && !loadingPreviewSlugs.has(project.slug))
+          .slice(0, PREVIEW_BATCH_SIZE);
+
+        for (const project of candidates) {
+          void loadPreviewMarker(project);
+        }
+      };
+
+      const scheduleVisiblePreviewLoad = () => {
+        cancelScheduledPreviewLoad();
+        if ("requestIdleCallback" in window && "cancelIdleCallback" in window) {
+          scheduledIdleHandle = window.requestIdleCallback(() => {
+            loadVisiblePreviewMarkers();
+            scheduledIdleHandle = null;
+          }, { timeout: 250 });
+          return;
+        }
+
+        scheduledTimeoutHandle = setTimeout(() => {
+          loadVisiblePreviewMarkers();
+          scheduledTimeoutHandle = null;
+        }, 50);
+      };
+
       const handleClusterClick = (event: maplibregl.MapLayerMouseEvent) => {
         const clusterFeature = event.features?.[0];
         if (!clusterFeature) {
@@ -232,6 +368,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
       };
 
       map.on("click", "unclustered-point", handleProjectPointClick);
+      map.on("click", "unclustered-photo", handleProjectPointClick);
 
       const handleMapDragStart = () => {
         setActiveProject(null);
@@ -241,7 +378,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
 
       const handleMapBackgroundClick = (event: maplibregl.MapMouseEvent) => {
         const projectFeatures = map.queryRenderedFeatures(event.point, {
-          layers: ["unclustered-point"],
+          layers: ["unclustered-point", "unclustered-photo"],
         });
 
         if (projectFeatures.length > 0) {
@@ -273,9 +410,22 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
         map.getCanvas().style.cursor = "pointer";
       });
 
+      map.on("mouseenter", "unclustered-photo", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+
       map.on("mouseleave", "unclustered-point", () => {
         map.getCanvas().style.cursor = "";
       });
+
+      map.on("mouseleave", "unclustered-photo", () => {
+        map.getCanvas().style.cursor = "";
+      });
+
+      map.on("moveend", scheduleVisiblePreviewLoad);
+      map.on("idle", scheduleVisiblePreviewLoad);
+
+      scheduleVisiblePreviewLoad();
 
       if (window.innerWidth < 768) {
         fitAllProjectsInView(map);

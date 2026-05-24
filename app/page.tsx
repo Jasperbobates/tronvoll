@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import LazyMapCanvas from "@/components/map/LazyMapCanvas";
+import MapCanvas from "@/components/map/MapCanvas";
 import AboutSection from "@/components/sections/AboutSection";
 import ProjectsSection from "@/components/sections/ProjectsSection";
 import ContactSection from "@/components/sections/ContactSection";
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main className="bg-white text-black">
-      <LazyMapCanvas projects={projects} />
+      <MapCanvas projects={projects} />
       <AboutSection />
       <ProjectsSection projects={projects} />
       <ContactSection />
