@@ -17,8 +17,11 @@ const DEFAULT_ZOOM = 1.5;
 const DEFAULT_PITCH = 16;
 const DEFAULT_BEARING = 0;
 const MOBILE_MIN_ZOOM = 0;
-const MOBILE_DEFAULT_CENTER: [number, number] = [10, 6];
+const MOBILE_DEFAULT_CENTER: [number, number] = [30, 20];
 const MOBILE_PITCH = 0;
+const MAX_MAP_ZOOM = 14;
+const CLUSTER_MAX_ZOOM = 12;
+const CLUSTER_FIT_MAX_ZOOM = 14;
 
 const createCircularMarkerImage = (imageUrl: string) =>
   new Promise<ImageData>((resolve, reject) => {
@@ -99,7 +102,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
       center: isMobileViewport ? MOBILE_DEFAULT_CENTER : DEFAULT_CENTER,
       zoom: isMobileViewport ? MOBILE_MIN_ZOOM : DEFAULT_ZOOM,
       minZoom: isMobileViewport ? MOBILE_MIN_ZOOM : 1.2,
-      maxZoom: 10,
+      maxZoom: MAX_MAP_ZOOM,
       pitch: isMobileViewport ? MOBILE_PITCH : DEFAULT_PITCH,
       bearing: DEFAULT_BEARING,
       attributionControl: false,
@@ -107,7 +110,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
       dragRotate: false,
       touchZoomRotate: true,
       touchPitch: false,
-      scrollZoom: false,
+      scrollZoom: true,
       doubleClickZoom: true,
       renderWorldCopies: !isMobileViewport,
     });
@@ -171,7 +174,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
           })),
         },
         cluster: true,
-        clusterMaxZoom: 10,
+        clusterMaxZoom: CLUSTER_MAX_ZOOM,
         clusterRadius: 30,
       });
 
@@ -203,19 +206,6 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
         },
         paint: {
           "text-color": "#ffffff",
-        },
-      });
-
-      map.addLayer({
-        id: "unclustered-point",
-        type: "circle",
-        source: "projects",
-        filter: ["!", ["has", "point_count"]],
-        paint: {
-          "circle-color": "#111111",
-          "circle-radius": 10,
-          "circle-stroke-color": "#ffffff",
-          "circle-stroke-width": 2,
         },
       });
 
@@ -262,8 +252,13 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
             );
 
             map.fitBounds(bounds, {
-              padding: { top: 80, right: 80, bottom: 80, left: 80 },
-              maxZoom: 10,
+              padding: {
+                top: isMobileViewport ? 72 : 120,
+                right: isMobileViewport ? 40 : 120,
+                bottom: isMobileViewport ? 72 : 120,
+                left: isMobileViewport ? 40 : 120,
+              },
+              maxZoom: CLUSTER_FIT_MAX_ZOOM,
               duration: 700,
               essential: true,
             });
@@ -303,7 +298,6 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
         });
       };
 
-      map.on("click", "unclustered-point", handleProjectPointClick);
       map.on("click", "unclustered-photo", handleProjectPointClick);
 
       const handleMapDragStart = () => {
@@ -314,7 +308,7 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
 
       const handleMapBackgroundClick = (event: maplibregl.MapMouseEvent) => {
         const projectFeatures = map.queryRenderedFeatures(event.point, {
-          layers: ["unclustered-point", "unclustered-photo"],
+          layers: ["unclustered-photo"],
         });
 
         if (projectFeatures.length > 0) {
@@ -342,16 +336,8 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
         map.getCanvas().style.cursor = "";
       });
 
-      map.on("mouseenter", "unclustered-point", () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
-
       map.on("mouseenter", "unclustered-photo", () => {
         map.getCanvas().style.cursor = "pointer";
-      });
-
-      map.on("mouseleave", "unclustered-point", () => {
-        map.getCanvas().style.cursor = "";
       });
 
       map.on("mouseleave", "unclustered-photo", () => {
@@ -399,6 +385,24 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
     resetMapView();
   };
 
+  const handleZoomIn = () => {
+    const map = mapRef.current;
+    if (!map) {
+      return;
+    }
+
+    map.zoomIn({ duration: 300, essential: true });
+  };
+
+  const handleZoomOut = () => {
+    const map = mapRef.current;
+    if (!map) {
+      return;
+    }
+
+    map.zoomOut({ duration: 300, essential: true });
+  };
+
   const handleScrollToSection = (sectionId: string) => {
     const targetSection = document.getElementById(sectionId);
     if (!targetSection) {
@@ -419,13 +423,33 @@ export default function MapCanvas({ projects }: MapCanvasProps) {
         className="h-full w-full [transform:perspective(1400px)_rotateX(1.4deg)] [transform-origin:center_top]"
       />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/25" />
-      <button
-        type="button"
-        onClick={handleResetView}
-        className="absolute bottom-3 right-3 z-30 border border-black/15 bg-white/90 px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white md:bottom-6 md:right-6 md:px-4 md:text-xs"
-      >
-        Reset View
-      </button>
+      <div className="absolute bottom-3 right-3 z-30 flex flex-col items-end gap-2 md:bottom-6 md:right-6">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-label="Zoom in"
+            onClick={handleZoomIn}
+            className="border border-black/15 bg-white/90 px-3 py-2 text-sm leading-none text-black transition hover:bg-white md:px-4"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            aria-label="Zoom out"
+            onClick={handleZoomOut}
+            className="border border-black/15 bg-white/90 px-3 py-2 text-sm leading-none text-black transition hover:bg-white md:px-4"
+          >
+            -
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={handleResetView}
+          className="border border-black/15 bg-white/90 px-3 py-2 text-[11px] uppercase tracking-[0.12em] text-black transition hover:bg-white md:px-4 md:text-xs"
+        >
+          Reset View
+        </button>
+      </div>
       {activeProject && <ProjectPanel project={activeProject} />}
       {!activeProject && (
         <>

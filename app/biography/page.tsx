@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
-import { groupExhibitions, publicCollections, soloExhibitions, type ChronologySection } from "@/data/biography";
+import {
+  groupExhibitions,
+  installationImagesByEntry,
+  publicCollections,
+  soloExhibitions,
+  type ChronologySection,
+} from "@/data/biography";
 
 export const metadata: Metadata = {
   title: "Biography & CV",
@@ -18,14 +25,37 @@ function ChronologyList({ title, sections }: { title: string; sections: Chronolo
       <h2 className="font-serif text-3xl tracking-tight md:text-4xl">{title}</h2>
       <div className="mt-6 space-y-3">
         {sections.map((section, index) => (
-          <details key={`${section.year}-${index}`} className="border border-black/10 bg-white">
+          <details key={`${section.year}-${index}`} open className="border border-black/10 bg-white">
             <summary className="cursor-pointer list-none px-4 py-3 text-sm uppercase tracking-[0.14em] text-black/70">
               {section.year}
             </summary>
             <ul className="space-y-2 px-4 pb-4 text-sm leading-relaxed text-black/80 md:text-base">
-              {section.entries.map((entry) => (
-                <li key={entry}>{entry}</li>
-              ))}
+              {section.entries.map((entry) => {
+                const keyByYear = `${section.year}|${entry}`;
+                const installationImages = installationImagesByEntry[keyByYear] ?? [];
+
+                return (
+                  <li key={entry}>
+                    <p>{entry}</p>
+                    {installationImages.length > 0 && (
+                      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {installationImages.map((imagePath, index) => (
+                          <figure key={`${entry}-${imagePath}`} className="overflow-hidden border border-black/10 bg-neutral-100">
+                            <Image
+                              src={imagePath}
+                              alt={`Installation view for ${entry} (${index + 1})`}
+                              width={1400}
+                              height={900}
+                              sizes="(max-width: 768px) 100vw, 420px"
+                              className="h-auto w-full"
+                            />
+                          </figure>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </details>
         ))}

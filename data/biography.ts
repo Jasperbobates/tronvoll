@@ -301,6 +301,39 @@ export const groupExhibitions: ChronologySection[] = [
   },
 ];
 
+export const installationImagesByEntry: Record<string, string[]> = {
+  "1996|Janice Guy, New York": [
+    "/images/JPEG's/ Installation views/ Janice Guy, King Street, 1996",
+  ],
+  "2001|Galleri K, Oslo": [
+    "/images/JPEG's/ Installation views/GalleriKMarch2001/Galleri K, a 03:01",
+    "/images/JPEG's/ Installation views/GalleriKMarch2001/Galleri K, b 03:01",
+  ],
+  "2009/10/11/12|Bergen kunstmuseum, Bergen": [
+    "/images/JPEG's/ Installation views/Bergen Kunstmuseum 2010/DSC_0084.JPG",
+    "/images/JPEG's/ Installation views/Bergen Kunstmuseum 2010/Tronvoll_01.jpg",
+  ],
+  "2002|SK Stiftung Kultur, Koln": [
+    "/images/JPEG's/ Installation views/SKStiftung KulturKøln2002/SKStiftung05.jpg",
+  ],
+  "2000/2001|Museet for Samtidskunst, Oslo": [
+    "/images/JPEG's/ Installation views/MFS2001/Museet for Samtidskunst, c03:01",
+    "/images/JPEG's/ Installation views/MFS2001/Museet for Samtidskunst, b03:01",
+  ],
+  "2004|Berlin North, Hamburger Bahnhof, Museum fur Gegenwartskunst, Berlin (catalogue)": [
+    "/images/JPEG's/ Installation views/HamburgerBahnhof2004.jpg",
+  ],
+  "2003|my room somehow somewhere, curated by Fumiya Sawa, Graf, Osaka": [
+    "/images/JPEG's/ Installation views/graf Osaka2003",
+  ],
+  "2002|Lila, Weiss und andere Farben, Galerie Max Hetzler, Berlin": [
+    "/images/JPEG's/ Installation views/LilaWeissGMHetzler.jpg",
+  ],
+  "1994|AGE Women 25-90, Trondheim Kunstmuseum, Trondheim (catalogue)": [
+    "/images/JPEG's/ Installation views/ TKMb1994.jpg",
+  ],
+};
+
 export const publicCollections: string[] = [
   "Bergen Kunstmuseum, Bergen",
   "Bomuldsfabrikken, Arendal",

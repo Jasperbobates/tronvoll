@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function AboutSection() {
   return (
@@ -8,6 +9,15 @@ export default function AboutSection() {
         <h2 className="font-serif text-4xl leading-tight md:text-5xl">
           Quiet observations of people, landscapes, and architecture.
         </h2>
+        <figure className="relative h-[28rem] w-full overflow-hidden bg-neutral-100">
+          <Image
+            src="/images/JPEG's/Potraits_mette/Mette1FumiyaSawajpg.jpg"
+            alt="Portrait of Mette Tronvoll"
+            fill
+            sizes="(max-width: 1024px) 100vw, 48rem"
+            className="object-cover object-[center_65%]"
+          />
+        </figure>
         <p className="text-base leading-relaxed text-black/75 md:text-lg">
           Mette Tronvoll is a photographer living and working in Oslo, Norway. Her practice explores
           geography as narrative, using light and distance to shape intimate visual stories.
